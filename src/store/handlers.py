@@ -11,9 +11,9 @@ from src.core.ui import escape, order_card, product_card
 from src.store import service
 
 
-def create_store_router(state: AppState) -> Router:
+def create_store_router(app_state: AppState) -> Router:
     router = Router()
-    db = state.db
+    db = app_state.db
 
     @router.message(Command("start"))
     async def cmd_start(message: Message) -> None:
@@ -68,7 +68,7 @@ def create_store_router(state: AppState) -> Router:
         await callback.answer("✅ Добавлено в корзину!")
 
     @router.callback_query(F.data.startswith("store_buy:"))
-    async def buy_now(callback: CallbackQuery, state_fsm: FSMContext) -> None:
+    async def buy_now(callback: CallbackQuery, state: FSMContext) -> None:
         if not callback.data:
             return
         product_id = int(callback.data.split(":")[1])
@@ -79,7 +79,7 @@ def create_store_router(state: AppState) -> Router:
         order_id = await service.create_order(
             db, callback.from_user.id, product_id, product["price"]
         )
-        state.metrics.inc_orders()
+        app_state.metrics.inc_orders()
         await callback.message.edit_text(  # type: ignore[union-attr]
             f"📦 Заказ #{order_id}\n"
             f"Товар: {escape(str(product.get('name', '')))}\n"
