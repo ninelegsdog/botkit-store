@@ -40,5 +40,5 @@ strict = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-addopts = "--strict-markers -q --tb=short"
+addopts = "--strict-markers -q --tb=short --cov=src --cov-report=term-missing --cov-fail-under=70"
 testpaths = ["tests"]
