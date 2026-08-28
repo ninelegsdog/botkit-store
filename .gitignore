@@ -8,3 +8,11 @@ __pycache__/
 data/
 .env
 dist/
+
+# build/test artifacts
+*.egg-info/
+__pycache__/
+*.pyc
+.coverage
+coverage.xml
+.hypothesis/
