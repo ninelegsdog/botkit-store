@@ -58,7 +58,7 @@ def _fake_db_with_session() -> MagicMock:
 # Config
 # --------------------------------------------------------------------------- #
 def test_config_from_env_reads_plain_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("BOT_TOKEN", "tkn")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "tkn")
     monkeypatch.setenv("ADMIN_PASSWORD", "pw")
     monkeypatch.setenv("ADMIN_IDS", "1,2,3")
     monkeypatch.setenv("REDIS_URL", "redis://example/1")
@@ -69,11 +69,11 @@ def test_config_from_env_reads_plain_env(monkeypatch: pytest.MonkeyPatch) -> Non
     assert cfg.redis_url == "redis://example/1"
 
 
-@pytest.mark.parametrize("missing", ["BOT_TOKEN", "ADMIN_PASSWORD", "ADMIN_IDS"])
+@pytest.mark.parametrize("missing", ["TELEGRAM_BOT_TOKEN", "ADMIN_PASSWORD", "ADMIN_IDS"])
 def test_config_validate_raises_when_required_missing(
     monkeypatch: pytest.MonkeyPatch, missing: str
 ) -> None:
-    monkeypatch.setenv("BOT_TOKEN", "tkn")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "tkn")
     monkeypatch.setenv("ADMIN_PASSWORD", "pw")
     monkeypatch.setenv("ADMIN_IDS", "1")
     monkeypatch.delenv(missing, raising=False)
