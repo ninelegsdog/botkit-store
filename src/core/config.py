@@ -14,6 +14,8 @@ class Config:
     db_path: str = "data/store.db"
     log_level: str = "INFO"
     sentry_dsn: str = ""
+    webhook_url: str = ""
+    webhook_cert_path: str = ""
     metrics_port: int = 8083
 
     @classmethod
@@ -36,6 +38,8 @@ class Config:
             db_path=os.getenv("DB_PATH", "data/store.db"),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             sentry_dsn=os.getenv("SENTRY_DSN", ""),
+            webhook_url=os.getenv("WEBHOOK_URL", ""),
+            webhook_cert_path=os.getenv("WEBHOOK_CERT_PATH", ""),
             metrics_port=int(os.getenv("METRICS_PORT", "8083")),
         )
 
