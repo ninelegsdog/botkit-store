@@ -4,20 +4,16 @@ import logging
 from typing import Any
 
 from aiohttp import web
+from botkit_core.metrics import (
+    BOTKIT_ERRORS_TOTAL,
+    BOTKIT_UPDATES_TOTAL,
+)
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 logger = logging.getLogger(__name__)
 
-UPDATES_TOTAL = Counter(
-    "bot_updates_total",
-    "Total updates received from Telegram",
-    ["type"],
-)
-ERRORS_TOTAL = Counter(
-    "bot_errors_total",
-    "Total errors handled by the global error handler",
-    ["error_type"],
-)
+UPDATES_TOTAL = BOTKIT_UPDATES_TOTAL
+ERRORS_TOTAL = BOTKIT_ERRORS_TOTAL
 ORDERS_TOTAL = Counter(
     "bot_orders_total",
     "Orders created",
