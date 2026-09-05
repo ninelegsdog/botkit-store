@@ -19,7 +19,7 @@ from src.core.config import Config
 from src.core.errors import RetryMiddleware, default_error_handler, register_error_handler
 from src.core.fsm import AdminAuth, AdminCategory, AdminProduct, CartCheckout
 from src.core.metrics import ORDERS_TOTAL, UPDATES_TOTAL, Metrics, UpdatesMiddleware
-from src.core.nav import admin_menu, client_menu
+from src.core.navigation import admin_menu, client_menu
 from src.core.payments import MockPaymentProvider, PaymentProvider
 from src.core.sentry import init_sentry
 from src.core.storage import Storage
@@ -317,7 +317,7 @@ async def test_mock_payment_provider() -> None:
     pid = await provider.create_payment(
         title="t", description="d", payload="p", amount=100
     )
-    assert pid == "mock_payment_123"
+    assert pid.startswith("https://t.me/mock-bot/invoice/")
     assert await provider.check_payment(pid) is True
 
 

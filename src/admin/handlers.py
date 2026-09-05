@@ -7,7 +7,7 @@ from aiogram.types import Message
 
 from src.core.bot_factory import AppState
 from src.core.fsm import AdminAuth
-from src.core.nav import admin_menu, client_menu
+from src.core.navigation import admin_menu, client_menu
 from src.store import service
 
 

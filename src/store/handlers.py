@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from src.core.bot_factory import AppState
-from src.core.nav import client_menu
+from src.core.navigation import client_menu
 from src.core.ui import escape, order_card, product_card
 from src.store import service
 
