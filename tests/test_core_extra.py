@@ -387,7 +387,7 @@ async def test_store_cmd_start_sends_welcome(monkeypatch: pytest.MonkeyPatch) ->
     sent = _patch_msg(monkeypatch)
     state = SimpleNamespace(db=MagicMock(), metrics=Metrics())
     router = create_store_router(state)  # type: ignore[arg-type]
-    await _find_handler(router, "message", "cmd_start")(_real_message(text="/start"))
+    await _find_handler(router, "message", "cmd_start")(_real_message(text="/start"), _fsm())
     assert any("Добро пожаловать" in (s or "") for s in sent)
 
 
