@@ -392,6 +392,22 @@ async def test_store_cmd_start_sends_welcome(monkeypatch: pytest.MonkeyPatch) ->
 
 
 @pytest.mark.asyncio
+async def test_store_cmd_start_clears_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    from src.core.fsm import CartCheckout
+    from src.core.metrics import Metrics
+    from src.store.handlers import create_store_router
+
+    _patch_msg(monkeypatch)
+    app_state = SimpleNamespace(db=MagicMock(), metrics=Metrics())
+    router = create_store_router(app_state)  # type: ignore[arg-type]
+    fsm_ctx = _fsm()
+    await fsm_ctx.set_state(CartCheckout.confirming)
+    assert await fsm_ctx.get_state() is not None
+    await _find_handler(router, "message", "cmd_start")(_real_message(text="/start"), fsm_ctx)
+    assert await fsm_ctx.get_state() is None
+
+
+@pytest.mark.asyncio
 async def test_store_buy_now_creates_order(db, monkeypatch: pytest.MonkeyPatch) -> None:
     from src.core.metrics import Metrics
     from src.store import service
