@@ -155,13 +155,26 @@ async def deliver_order(db: Database, order_id: int, payload: str) -> None:
         )
 
 
-async def get_delivery(db: Database, order_id: int) -> dict[str, Any] | None:
+async def get_delivery(
+    db: Database, order_id: int, user_id: int
+) -> dict[str, Any] | None:
+    """Read a delivered order, but only for the user who placed it.
+
+    `user_id` is a required argument and part of the WHERE clause rather than a check
+    in the handler. `order_id` arrives from `callback.data`, which the client fully
+    controls, and ids are sequential integers - so a handler that filtered afterwards
+    by `order['user_id']` would still have had to trust a value it had already read.
+    Filtering in the query means a wrong or absent id returns nothing instead of
+    another customer's payload.
+    """
     async with db.session() as session:
         result = await session.execute(
             text(
-                "SELECT * FROM product_deliveries WHERE order_id = :oid LIMIT 1"
+                "SELECT d.* FROM product_deliveries d "
+                "JOIN orders o ON o.id = d.order_id "
+                "WHERE d.order_id = :oid AND o.user_id = :uid LIMIT 1"
             ),
-            {"oid": order_id},
+            {"oid": order_id, "uid": user_id},
         )
         row = result.mappings().fetchone()
         return dict(row) if row else None
