@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from src.core.bot_factory import AppState
+from src.core.callbacks import parse_callback_int
 from src.core.navigation import client_menu
 from src.core.ui import escape, order_card, product_card
 from src.store import service
@@ -145,11 +146,18 @@ def create_store_router(app_state: AppState) -> Router:
     async def redeliver(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        order_id = int(callback.data.split(":")[1])
-        delivery = await service.get_delivery(db, order_id)
+        # Callback data is entirely client-controlled and order ids are sequential,
+        # so the owner is part of the lookup. See service.get_delivery.
+        order_id = parse_callback_int(callback.data, "store_redeliver:")
+        if order_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
+        delivery = await service.get_delivery(db, order_id, callback.from_user.id)
         if delivery:
             await callback.message.answer(f"📥 Ваш товар:\n{delivery['payload']}")  # type: ignore
         else:
+            # One message for "no such order" and "not your order" alike: telling them
+            # apart turns this into an oracle for which order ids exist.
             await callback.answer("Товар ещё не выдан.", show_alert=True)
         await callback.answer()
 

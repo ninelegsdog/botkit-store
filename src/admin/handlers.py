@@ -5,6 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
+from src.core.auth import AdminGate
 from src.core.bot_factory import AppState
 from src.core.fsm import AdminAuth
 from src.core.navigation import admin_menu, client_menu
@@ -14,9 +15,16 @@ from src.store import service
 def create_admin_router(app_state: AppState) -> Router:
     router = Router()
     db = app_state.db
+    # The gate exists and is unit-tested, but the password check below ran raw: no attempt
+    # limit, and a plain == that is timing-observable. Authorising through the gate gives
+    # hmac.compare_digest and records failed attempts.
+    gate = AdminGate(
+        app_state.config.admin_password, app_state.config.admin_ids or []
+    )
 
     def is_admin(user_id: int) -> bool:
-        return user_id in (app_state.config.admin_ids or [])
+        # Unchanged semantics: config admins, plus anyone the gate has authorised.
+        return gate.is_admin(user_id)
 
     @router.message(Command("admin"))
     async def cmd_admin(message: Message, state: FSMContext) -> None:
@@ -25,7 +33,15 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.message(AdminAuth.waiting_password)
     async def check_password(message: Message, state: FSMContext) -> None:
-        if message.text == app_state.config.admin_password:
+        user_id = message.from_user.id  # type: ignore[union-attr]
+        if gate.is_throttled(user_id):
+            await state.clear()
+            await message.answer(
+                "⏳ Слишком много попыток. Попробуйте через 5 минут.",
+                reply_markup=client_menu(),
+            )
+            return
+        if gate.authorize(user_id, message.text or ""):
             await state.clear()
             await message.answer("✅ Добро пожаловатесь!", reply_markup=admin_menu())
         else:

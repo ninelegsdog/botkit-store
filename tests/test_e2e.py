@@ -34,7 +34,7 @@ async def test_idempotent_delivery(db):
     await service.mark_paid(db, order_id, "payment_123")
     await service.deliver_order(db, order_id, "Your key: ABC123")
 
-    delivery = await service.get_delivery(db, order_id)
+    delivery = await service.get_delivery(db, order_id, 111)
     assert delivery is not None
     assert delivery["payload"] == "Your key: ABC123"
 
