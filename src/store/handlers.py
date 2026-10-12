@@ -42,7 +42,10 @@ def create_store_router(app_state: AppState) -> Router:
     async def show_category(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        cat_id = int(callback.data.split(":")[1])
+        cat_id = parse_callback_int(callback.data, "store_cat:")
+        if cat_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         products = await service.get_products(db, cat_id)
         if not products:
             await callback.message.edit_text("Нет товаров.")  # type: ignore
@@ -65,7 +68,10 @@ def create_store_router(app_state: AppState) -> Router:
     async def add_to_cart(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        product_id = int(callback.data.split(":")[1])
+        product_id = parse_callback_int(callback.data, "store_cart:")
+        if product_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         await service.add_to_cart(db, callback.from_user.id, product_id)
         await callback.answer("✅ Добавлено в корзину!")
 
@@ -73,7 +79,10 @@ def create_store_router(app_state: AppState) -> Router:
     async def buy_now(callback: CallbackQuery, state: FSMContext) -> None:
         if not callback.data:
             return
-        product_id = int(callback.data.split(":")[1])
+        product_id = parse_callback_int(callback.data, "store_buy:")
+        if product_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         product = await service.get_product(db, product_id)
         if not product:
             await callback.answer("Товар не найден.", show_alert=True)
