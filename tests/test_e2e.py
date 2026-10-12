@@ -18,7 +18,7 @@ async def test_full_purchase_flow(db):
 
     order_id = await service.create_order(db, 111, prod_id, 100)
     await service.mark_paid(db, order_id, "payment_123")
-    await service.deliver_order(db, order_id, "Your key: ABC123")
+    await _fulfill_with_key(db, order_id, "Your key: ABC123")
 
     order = await service.get_order(db, order_id)
     assert order["status"] == "delivered"
@@ -32,7 +32,7 @@ async def test_idempotent_delivery(db):
     )
     order_id = await service.create_order(db, 111, prod_id, 100)
     await service.mark_paid(db, order_id, "payment_123")
-    await service.deliver_order(db, order_id, "Your key: ABC123")
+    await _fulfill_with_key(db, order_id, "Your key: ABC123")
 
     delivery = await service.get_delivery(db, order_id, 111)
     assert delivery is not None
@@ -46,3 +46,25 @@ async def test_product_card_html():
         "price": 100,
     })
     assert "<script>" not in card
+
+
+async def _fulfill_with_key(db, order_id: int, value: str) -> None:
+    """Put one unit of stock in place and fulfil the order with it.
+
+    `fulfill_order` allocates the key itself, so a test that wants a known payload puts
+    that exact value into stock first.
+    """
+    from sqlalchemy import text
+
+    async with db.session() as session:
+        result = await session.execute(
+            text("SELECT product_id FROM orders WHERE id = :oid"), {"oid": order_id}
+        )
+        product_id = int(result.scalar_one())
+    async with db.transaction() as session:
+        await session.execute(
+            text("INSERT INTO keys (product_id, value, used_by) VALUES (:p, :v, NULL)"),
+            {"p": product_id, "v": value},
+        )
+    assert await service.fulfill_order(db, order_id) == value
+

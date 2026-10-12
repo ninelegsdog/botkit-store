@@ -16,14 +16,27 @@ INTRUDER = 999
 
 
 async def _delivered_order(db, user_id: int, payload: str) -> int:
+    """Put one order into the delivered state, with `payload` as its key."""
     cat_id = await service.create_category(db, f"Cat-{user_id}")
     prod_id = await service.create_product(
         db, category_id=cat_id, name=f"P-{user_id}", price=100
     )
+    # One unit of stock whose value is exactly the payload the test asserts on.
+    await _add_key(db, prod_id, payload)
     order_id = await service.create_order(db, user_id, prod_id, 100)
     await service.mark_paid(db, order_id, f"pay-{user_id}")
-    await service.deliver_order(db, order_id, payload)
+    assert await service.fulfill_order(db, order_id) == payload
     return order_id
+
+
+async def _add_key(db, product_id: int, value: str) -> None:
+    from sqlalchemy import text
+
+    async with db.transaction() as session:
+        await session.execute(
+            text("INSERT INTO keys (product_id, value, used_by) VALUES (:p, :v, NULL)"),
+            {"p": product_id, "v": value},
+        )
 
 
 @pytest.mark.asyncio
