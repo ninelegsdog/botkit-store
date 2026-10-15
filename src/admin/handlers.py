@@ -43,7 +43,7 @@ def create_admin_router(app_state: AppState) -> Router:
             return
         if gate.authorize(user_id, message.text or ""):
             await state.clear()
-            await message.answer("✅ Добро пожаловатесь!", reply_markup=admin_menu())
+            await message.answer("✅ Добро пожаловать!", reply_markup=admin_menu())
         else:
             await state.clear()
             await message.answer("❌ Неверный пароль.", reply_markup=client_menu())

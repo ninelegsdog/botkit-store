@@ -473,7 +473,7 @@ async def test_admin_check_password_correct_welcome(monkeypatch: pytest.MonkeyPa
     fsm = _fsm()
     await fsm.set_state(AdminAuth.waiting_password)
     await _find_handler(router, "message", "check_password")(msg, state=fsm)
-    assert any("Добро пожаловатесь" in (s or "") for s in sent)
+    assert any("Добро пожаловать" in (s or "") for s in sent)
     assert await fsm.get_state() is None
 
 
