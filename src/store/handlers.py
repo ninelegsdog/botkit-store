@@ -126,8 +126,25 @@ def create_store_router(app_state: AppState) -> Router:
         if not items:
             await callback.answer("Корзина пуста.", show_alert=True)
             return
-        total = sum(item.get("price", 0) * item.get("qty", 1) for item in items)
-        await callback.message.edit_text(f"💰 Оформление заказа на {total} Stars")  # type: ignore
+        # Оформление — настоящий заказ по каждой позиции: раньше кнопка только
+        # печатала «Оформление заказа», заказ не создавался и корзина не чистилась.
+        order_ids = []
+        total = 0
+        for item in items:
+            amount = item.get("price", 0) * item.get("qty", 1)
+            order_id = await service.create_order(
+                db, callback.from_user.id, int(item["product_id"]), amount
+            )
+            order_ids.append(order_id)
+            total += amount
+            app_state.metrics.inc_orders()
+        await service.clear_cart(db, callback.from_user.id)
+        orders_line = ", ".join(f"#{oid}" for oid in order_ids)
+        await callback.message.edit_text(  # type: ignore
+            f"✅ Заказ оформлен: {orders_line}\n"
+            f"Сумма: {total} Stars\n\n"
+            "Оплата через Telegram Stars. Посмотреть — «📦 Мои покупки»."
+        )
         await callback.answer()
         await callback.message.answer("Выберите действие:", reply_markup=client_menu())  # type: ignore
 
