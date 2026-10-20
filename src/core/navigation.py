@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
+from src.store import texts
+
 
 @dataclass(frozen=True)
 class NavSection:
@@ -32,8 +34,8 @@ class NavRegistry:
 def client_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🛍 Каталог"), KeyboardButton(text="🛒 Корзина")],
-            [KeyboardButton(text="📦 Мои покупки")],
+            [KeyboardButton(text=texts.BTN_CATALOG), KeyboardButton(text=texts.BTN_CART)],
+            [KeyboardButton(text=texts.BTN_MY_ORDERS)],
         ],
         resize_keyboard=True,
     )
@@ -42,8 +44,8 @@ def client_menu() -> ReplyKeyboardMarkup:
 def admin_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🛍 Товары"), KeyboardButton(text="🗂 Категории")],
-            [KeyboardButton(text="📦 Заказы"), KeyboardButton(text="📊 Продажи")],
+            [KeyboardButton(text=texts.BTN_PRODUCTS), KeyboardButton(text=texts.BTN_CATEGORIES)],
+            [KeyboardButton(text=texts.BTN_ORDERS), KeyboardButton(text=texts.BTN_SALES)],
         ],
         resize_keyboard=True,
     )
