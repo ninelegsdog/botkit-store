@@ -79,6 +79,9 @@ PAYMENT_HINT = "Оплата через Telegram Stars. Посмотреть —
 # ── Общие ответы ────────────────────────────────────────────────────────────
 BAD_REQUEST = "Некорректный запрос."
 PRODUCT_NOT_FOUND = "Товар не найден."
+# Ответ на дроп в ThrottlingMiddleware (F3): без него пользователь видел
+# «бот игнорирует» — молчаливый return None вместо причины.
+THROTTLE_APOLOGY = "⏳ Секунду! Сообщения идут слишком часто — я отвечаю на предыдущее. Повторите через пару секунд."
 
 
 def order_review(order_id: int, product_name: str, price: object) -> str:

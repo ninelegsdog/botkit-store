@@ -19,6 +19,7 @@ from src.core.sentry import init_sentry
 from src.core.tgwebhook import build_webhook_app
 from src.core.throttling import ThrottlingMiddleware
 from src.core.tracing import setup_tracing
+from src.store import texts
 
 
 async def _run_webhook(state: Any, shutdown_event: asyncio.Event) -> None:
@@ -76,7 +77,12 @@ async def main() -> None:
     init_sentry(state.config.sentry_dsn)
     await migrate(state.db)
     state.dp.message.middleware(AuthMiddleware(state.db))
-    state.dp.message.middleware(ThrottlingMiddleware(redis_url=state.config.redis_url))
+    state.dp.message.middleware(
+        ThrottlingMiddleware(
+            redis_url=state.config.redis_url,
+            apology_text=texts.THROTTLE_APOLOGY,
+        )
+    )
     state.dp.callback_query.middleware(AuthMiddleware(state.db))
     state.dp.update.outer_middleware(LoggingMiddleware())
     state.dp.update.outer_middleware(UpdatesMiddleware())

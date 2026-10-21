@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from datetime import datetime
 from types import SimpleNamespace
@@ -100,16 +101,59 @@ def test_create_app_builds_state_with_memory_fsm() -> None:
 # --------------------------------------------------------------------------- #
 @pytest.mark.asyncio
 async def test_throttling_passes_first_throttles_second() -> None:
-    mw = ThrottlingMiddleware(min_interval=2.0)
+    mw = ThrottlingMiddleware(min_interval=2.0, apology_text="x")
     handler = AsyncMock(return_value="result")
-    first = await mw(handler, _real_message(), {})
-    assert first == "result"
-    assert handler.await_count == 1
+    with patch.object(Message, "answer", new=AsyncMock()):
+        first = await mw(handler, _real_message(), {})
+        assert first == "result"
+        assert handler.await_count == 1
 
-    mw._last_message[1] = time.time()
-    second = await mw(handler, _real_message(), {})
+        mw._last_message[1] = time.time()
+        second = await mw(handler, _real_message(), {})
     assert second is None
     assert handler.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_throttled_second_message_gets_polite_answer_and_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """F3: дроп обязан быть видим — вежливый ответ и запись в лог с причиной.
+
+    Старое поведение: `return None` молча, ни ответа, ни записи — со стороны
+    пользователя это «бот игнорирует», а при разборе флаки — дефект бота там,
+    где дефекта нет. Негатив: до правки `answer` не вызывался и лога не было.
+    """
+    mw = ThrottlingMiddleware(min_interval=2.0, apology_text="⏳ Секунду!")
+    handler = AsyncMock(return_value="ok")
+    with (
+        caplog.at_level(logging.INFO, logger="src.core.throttling"),
+        patch.object(Message, "answer", new=AsyncMock()) as answer,
+    ):
+        mw._last_message[1] = time.time()
+        second = await mw(handler, _real_message(), {})
+    assert second is None
+    handler.assert_not_awaited()
+    answer.assert_awaited_once()  # вежливый ответ вместо молчания
+    answer.assert_awaited_with("⏳ Секунду!")
+    assert any(
+        "throttl" in record.getMessage().lower() and str(mw._min_interval) in record.getMessage()
+        for record in caplog.records
+    ), "дроп без записи причины в лог"
+
+
+@pytest.mark.asyncio
+async def test_throttling_storm_sends_single_apology() -> None:
+    """Шторм (сообщения подряд) — одно извинение, а не поток извинений."""
+    mw = ThrottlingMiddleware(min_interval=2.0, apology_text="⏳ Секунду!")
+    handler = AsyncMock()
+    with patch.object(Message, "answer", new=AsyncMock()) as answer:
+        mw._last_message[1] = time.time()
+        await mw(handler, _real_message(), {})
+        await mw(handler, _real_message(), {})
+        await mw(handler, _real_message(), {})
+    assert handler.await_count == 0
+    assert answer.await_count == 1
 
 
 @pytest.mark.asyncio
