@@ -173,7 +173,6 @@ def create_store_router(app_state: AppState) -> Router:
             kb = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [InlineKeyboardButton(text="💳 Оплатить", url=link)],
-                    *client_menu().inline_keyboard,
                 ]
             )
         await callback.message.edit_text(text, reply_markup=kb)  # type: ignore
