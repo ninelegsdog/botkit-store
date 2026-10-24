@@ -148,14 +148,32 @@ def create_store_router(app_state: AppState) -> Router:
         # не списывается. Переключение на реальный сервис — env
         # PAYMENT_PROVIDER=yookassa + YOOKASSA_SHOP_ID/SECRET_KEY.
         provider_name = os.getenv("PAYMENT_PROVIDER", "mock").strip().lower() or "mock"
+
+        async def _on_paid(payload: str) -> None:
+            if not payload.startswith("orders:"):
+                return
+            for oid_str in payload.split(":", 1)[1].split(","):
+                oid_str = oid_str.strip()
+                if not oid_str:
+                    continue
+                try:
+                    await service.mark_paid(db, int(oid_str), "demo")
+                except Exception:
+                    pass
+
         try:
-            provider = create_payment_provider(
-                provider_name,
-                shop_id=os.getenv("YOOKASSA_SHOP_ID", ""),
-                secret_key=os.getenv("YOOKASSA_SECRET_KEY", ""),
-            )
+            if provider_name == "mock":
+                provider = create_payment_provider(
+                    "mock", on_confirmed=_on_paid, auto_confirm=True
+                )
+            else:
+                provider = create_payment_provider(
+                    provider_name,
+                    shop_id=os.getenv("YOOKASSA_SHOP_ID", ""),
+                    secret_key=os.getenv("YOOKASSA_SECRET_KEY", ""),
+                )
         except (ValueError, KeyError):
-            provider = create_payment_provider("mock")
+            provider = create_payment_provider("mock", on_confirmed=_on_paid, auto_confirm=True)
         link = None
         try:
             link = await provider.create_invoice_link(  # type: ignore[attr-defined]
@@ -164,6 +182,7 @@ def create_store_router(app_state: AppState) -> Router:
                 payload="orders:" + ",".join(str(oid) for oid in order_ids),
                 amount=total,
                 currency="XTR",
+                user_id=callback.from_user.id,
             )
         except Exception:
             link = None
