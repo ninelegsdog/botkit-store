@@ -169,3 +169,11 @@ Do not open a public issue for a security problem. See [SECURITY.md](SECURITY.md
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Screenshots
+
+| Главное меню | Каталог | Корзина | Оформление заказа |
+|---|---|---|---|
+| ![Menu](assets/screenshots/menu.png) | ![Catalog](assets/screenshots/catalog.png) | ![Cart](assets/screenshots/cart.png) | ![Checkout](assets/screenshots/checkout.png) |
+
+*Скриншоты будут добавлены по мере обновления.*
