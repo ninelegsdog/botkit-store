@@ -119,3 +119,47 @@ def orders_stats(day_paid: int, day_pending: int, week_paid: int, week_pending: 
         f"  Оплачено: {week_paid}\n"
         f"  Ожидает: {week_pending}"
     )
+
+
+# ── Админ-кнопки (каталог) ────────────────────────────────────────────────────
+BTN_ADMIN_CAT_ADD = "➕ Добавить категорию"
+BTN_ADMIN_PROD_ADD = "➕ Добавить товар"
+BTN_ADMIN_EDIT = "✏️ Редактировать"
+BTN_ADMIN_TOGGLE = "🔄 Активность"
+BTN_ADMIN_DEL = "🗑 Удалить"
+BTN_ADMIN_KEYS = "🔑 Ключи (пополнить)"
+BTN_ADMIN_FULFILL = "📤 Выдать вручную"
+BTN_ADMIN_CANCEL = "❌ Отменить заказ"
+BTN_ADMIN_REFUND = "💸 Вернуть (Stars)"
+BTN_STOCK_LOW = "⚠️ Остатки ключей"
+
+# ── Админ-сообщения ───────────────────────────────────────────────────────────
+ADMIN_CAT_EMPTY = "Категорий пока нет."
+ADMIN_PROD_EMPTY = "В этой категории нет товаров."
+ADMIN_ORDER_EMPTY = "Заказов нет."
+ADMIN_STOCK_EMPTY = "Все товары имеют достаточное количество ключей."
+
+ADMIN_CAT_CREATED = "Категория «{name}» создана."
+ADMIN_CAT_UPDATED = "Категория обновлена."
+ADMIN_CAT_TOGGLED = "Активность категории изменена."
+ADMIN_CAT_DELETED = "Категория удалена."
+ADMIN_CAT_CANNOT_DELETE = "Нельзя удалить категорию, в которой есть товары."
+
+ADMIN_PROD_CREATED = "Товар «{name}» создан (цена: {price} Stars)."
+ADMIN_PROD_UPDATED = "Товар обновлён."
+ADMIN_PROD_TOGGLED = "Активность товара изменена."
+ADMIN_PROD_DELETED = "Товар удалён."
+ADMIN_PROD_CANNOT_DELETE = "Нельзя удалить товар с активными заказами (создан/ожидает оплату/оплачен)."
+
+ADMIN_KEYS_ADDED = "Добавлено {count} ключей для товара «{name}»."
+ADMIN_KEYS_STOCK = "Остаток ключей для «{name}»: {available} из {total}."
+
+ADMIN_ORDER_FULFILLED = "Заказ #{order_id} выдан вручную."
+ADMIN_ORDER_CANCELLED = "Заказ #{order_id} отменён."
+ADMIN_ORDER_REFUNDED = "Заказ #{order_id} помещён как возвращён."
+ADMIN_ORDER_NOT_FOUND = "Заказ не найден или уже обработан."
+
+# ── Ошибки ввода ──────────────────────────────────────────────────────────────
+ERR_INVALID_PRICE = "Цена должна быть положительным целым числом (в Stars)."
+ERR_INVALID_POSITION = "Позиция должна быть целым числом."
+ERR_INVALID_KEYS = "Ключи должны быть перечислены по одному на строку."

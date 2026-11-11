@@ -38,6 +38,7 @@ The testing guide is the substantial document in this repository: it documents t
 - **Re-issue a purchase** — A customer can re-deliver an order from "My purchases" (`store_redeliver`).
 - **Service layer over the database** — `src/store/service.py` holds the data access, keeping handlers thin.
 - **Admin panel, anti-flood, `/metrics`, Sentry** — The operational surface every bot in this family carries.
+- **Admin catalogue management** — Categories CRUD, products CRUD (name, description, price, delivery type, payload, photo), key-pool replenishment, stock-level alerts, order fulfil/cancel/refund — all from the bot chat.
 
 ## Stack
 
@@ -90,6 +91,20 @@ production compose file and its own `.env.example`.
 ```bash
 cd deploy && cp .env.example .env   # fill in, then bring the stack up
 ```
+
+## Администрирование ассортимента
+
+После входа (`/admin` + пароль) админ управляет каталогом из чата:
+
+| Раздел | Действие |
+|--------|----------|
+| 🗂 Категории | Создать, редактировать, переключить активность, удалить (только если нет товаров) |
+| 🛍 Товары | Создать (название → описание → цена → тип выдачи → ключи/ссылка/фото), редактировать, пополнить ключи, удалить (только если нет активных заказов) |
+| 📦 Заказы | Список по статусам, выдать вручную, отменить, вернуть (Stars) |
+| 📊 Продажи | Выручка, оплачено/доставлено/возвращено за период |
+| ⚠️ Остатки ключей | Товары с остатком ключей ≤ 5 шт. |
+
+Все destruктивные действия требуют подтверждения (`✅ Да` / `❌ Нет`). Товары и категории удаляются мягко (`is_active = 0`).
 
 ## Testing
 
