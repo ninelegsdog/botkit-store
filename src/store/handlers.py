@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any
 
 import os
 
@@ -176,7 +177,7 @@ def create_store_router(app_state: AppState) -> Router:
             provider = create_payment_provider("mock", on_confirmed=_on_paid, auto_confirm=True)
         link = None
         try:
-            link = await provider.create_invoice_link(  # type: ignore[attr-defined]
+            link = await provider.create_invoice_link(
                 title="Заказ магазина",
                 description=f"Заказы {orders_line}",
                 payload="orders:" + ",".join(str(oid) for oid in order_ids),
@@ -187,7 +188,7 @@ def create_store_router(app_state: AppState) -> Router:
         except Exception:
             link = None
         text = texts.order_placed(orders_line, total, texts.PAYMENT_HINT)
-        kb = client_menu()
+        kb: Any = client_menu()
         if link:
             kb = InlineKeyboardMarkup(
                 inline_keyboard=[
