@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -8,8 +10,6 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from src.core.bot_factory import AppState
 from src.core.callbacks import parse_callback_int
 from src.core.navigation import client_menu
-import os
-
 from src.core.payments import create_payment_provider
 from src.core.ui import escape, order_card, product_card
 from src.store import service, texts
