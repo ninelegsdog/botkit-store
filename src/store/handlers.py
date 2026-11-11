@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import Any
 
 import os
+from typing import Any
 
 from aiogram import F, Router
 from aiogram.filters import Command
