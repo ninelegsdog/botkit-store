@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import httpx
 from sqlalchemy import text
 
 from src.core.database import Database
@@ -585,14 +586,61 @@ async def cancel_order(db: Database, order_id: int) -> bool:
         return bool(result.rowcount)  # type: ignore[attr-defined]
 
 
-async def refund_order(db: Database, order_id: int) -> bool:
-    """Mark a paid order as refunded in the database.
+async def refund_order(
+    db: Database, order_id: int, *, bot_token: str | None = None
+) -> bool:
+    """Mark a paid order as refunded and call Telegram refundStarPayment.
 
-    The actual Telegram Stars refund (refundStarPayment) is triggered by the
-    admin handler; this function records the refund idempotently.
-    Returns False when the order is missing or not in a refundable state.
+    The actual Telegram Stars refund is performed via the
+    refundStarPayment Bot API method when bot_token is provided.
+    The database record is updated idempotently afterwards.
+    Returns False when the order is missing or not in a refundable state,
+    or when the Telegram API call fails (if a token was provided).
     """
     async with db.transaction() as session:
+        # Fetch order details needed for the Telegram API call.
+        order_result = await session.execute(
+            text("SELECT user_id, amount FROM orders WHERE id = :oid"),
+            {"oid": order_id},
+        )
+        order_row = order_result.first()
+        if order_row is None:
+            return False
+        user_id = int(order_row[0])
+        amount = int(order_row[1])
+
+        # Fetch the Stars payment charge id from the payments ledger.
+        payment_result = await session.execute(
+            text(
+                "SELECT external_id FROM payments "
+                "WHERE order_id = :oid AND provider = 'stars' AND status = 'succeeded'"
+            ),
+            {"oid": order_id},
+        )
+        payment_row = payment_result.first()
+        charge_id = str(payment_row[0]) if payment_row else None
+
+        # Call Telegram refundStarPayment API when a token is available.
+        if bot_token and charge_id:
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(
+                        f"https://api.telegram.org/bot{bot_token}/refundStarPayment",
+                        json={
+                            "user_id": user_id,
+                            "payment_charge_id": charge_id,
+                            "amount": amount,
+                        },
+                        timeout=10.0,
+                    )
+                    if not resp.is_success:
+                        # API call failed - do not mark the order as refunded
+                        # so the admin can retry.
+                        return False
+            except httpx.HTTPError:
+                return False
+
+        # Mark the order as refunded in the database (idempotent).
         result = await session.execute(
             text(
                 "UPDATE orders SET status = 'refunded', delivered_at = datetime('now') "

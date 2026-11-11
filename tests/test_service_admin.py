@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from sqlalchemy import text
 
@@ -432,3 +434,67 @@ async def test_delete_category_protects_orders(db):
     # Actually pending_payment blocks deletion
     ok = await service.delete_product(db, prod_id)
     assert ok is False  # pending_payment order blocks
+
+@pytest.mark.asyncio
+async def test_refund_order_with_bot_token_success(db):
+    """Successful refundStarPayment API call marks order as refunded."""
+    cat_id = await service.create_category(db, "Cat")
+    prod_id = await service.create_product(db, category_id=cat_id, name="P", price=100)
+    order_id = await service.create_order(db, 1, prod_id, 100)
+    await service.mark_paid(db, order_id, "pay_charge_123")
+
+    mock_response = AsyncMock()
+    mock_response.is_success = True
+    mock_response.status_code = 200
+
+    with patch("src.store.service.httpx.AsyncClient") as mock_client:
+        mock_client.return_value.__aenter__.return_value.post.return_value = mock_response
+        ok = await service.refund_order(db, order_id, bot_token="123456:ABC-DEF")
+
+    assert ok is True
+    order = await service.get_order(db, order_id)
+    assert order["status"] == "refunded"
+
+
+@pytest.mark.asyncio
+async def test_refund_order_with_bot_token_api_failure(db):
+    """Failed refundStarPayment API call does not mark order as refunded."""
+    cat_id = await service.create_category(db, "Cat")
+    prod_id = await service.create_product(db, category_id=cat_id, name="P", price=100)
+    order_id = await service.create_order(db, 1, prod_id, 100)
+    await service.mark_paid(db, order_id, "pay_charge_123")
+
+    mock_response = AsyncMock()
+    mock_response.is_success = False
+    mock_response.status_code = 400
+
+    with patch("src.store.service.httpx.AsyncClient") as mock_client:
+        mock_client.return_value.__aenter__.return_value.post.return_value = mock_response
+        ok = await service.refund_order(db, order_id, bot_token="123456:ABC-DEF")
+
+    assert ok is False
+    order = await service.get_order(db, order_id)
+    assert order["status"] == "paid"
+
+
+@pytest.mark.asyncio
+async def test_refund_order_with_bot_token_no_payment(db):
+    """Order with no Stars payment record can still be refunded without API call."""
+    cat_id = await service.create_category(db, "Cat")
+    prod_id = await service.create_product(db, category_id=cat_id, name="P", price=100)
+    order_id = await service.create_order(db, 1, prod_id, 100)
+    await service.mark_paid(db, order_id, "pay_charge_123")
+
+    # Delete the payment record to simulate missing charge id
+    from sqlalchemy import text as sa_text
+    async with db.transaction() as session:
+        await session.execute(
+            sa_text("DELETE FROM payments WHERE order_id = :oid"),
+            {"oid": order_id},
+        )
+
+    ok = await service.refund_order(db, order_id, bot_token="123456:ABC-DEF")
+    assert ok is True
+    order = await service.get_order(db, order_id)
+    assert order["status"] == "refunded"
+

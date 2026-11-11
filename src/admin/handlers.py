@@ -665,7 +665,9 @@ def create_admin_router(app_state: AppState) -> Router:
         if order_id is None:
             await callback.answer(texts.BAD_REQUEST, show_alert=True)
             return
-        ok = await service.refund_order(db, order_id)
+        ok = await service.refund_order(
+            db, order_id, bot_token=app_state.config.bot_token
+        )
         message = callback.message
         if isinstance(message, Message):
             if ok:
