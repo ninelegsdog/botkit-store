@@ -72,6 +72,17 @@ so this must be demonstrable without a Telegram account.
 the domain module carries this bot's logic. Do not add a module that belongs in
 either without saying so in the pull request.
 
+Admin handlers (`admin/handlers.py`) are FSM-driven and must:
+
+- Guard every entry with `is_admin(user_id)` (via `AdminGate`) — non-admin gets a silent `return`.
+- Use `parse_callback_int(callback.data, "<prefix>")` for all `callback.data` parsing — never `int(callback.data.split(...))`.
+- Guard state transitions: `state.clear()` on success/failure, `state.update_data()` for intermediate FSM data.
+- Every destructive action (delete category/product, cancel/refund order) goes through `admin_confirm_keyboard` with `✅ Да` / `❌ Нет`.
+- Soft-delete only: `is_active = 0`, never hard-delete rows referenced by orders or carts.
+- Category deletion refuses when products exist; product deletion refuses when unfulfilled orders exist.
+
+Coverage floor for `src/admin/handlers.py` is 60% (per `scripts/coverage-floors.json`).
+
 ## Style
 
 - Python >=3.12, aiogram 3, SQLAlchemy 2 async.
