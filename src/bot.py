@@ -22,41 +22,63 @@ from src.core.tracing import setup_tracing
 from src.store import texts
 
 
+async def _safe_delete_webhook(bot: Any, drop_pending_updates: bool = True) -> None:
+    Удалить вебхук с таймаутом. Не падаем, если Telegram API недоступен.
+    try:
+        await asyncio.wait_for(
+            bot.delete_webhook(drop_pending_updates=drop_pending_updates), timeout=10.0
+        )
+    except asyncio.TimeoutError:
+        logging.warning(
+            delete_webhook timed out — Telegram API unreachable, continuing without webhook
+        )
+    except Exception as exc:  # noqa: BLE001 — ловим любые сетевые ошибки, бот не должен падать
+        logging.warning(
+            delete_webhook failed: %s — continuing without webhook, exc
+        )
+
+
+async def _safe_set_webhook(bot: Any, url: str, secret_token: str | None = None) -> None:
+    Установить вебхук с таймаутом. Не падаем, если Telegram API недоступен.
+    try:
+        await asyncio.wait_for(
+            bot.set_webhook(url=url, secret_token=secret_token), timeout=10.0
+        )
+        logging.info(Telegram webhook registered: %s, url)
+    except asyncio.TimeoutError:
+        logging.warning(
+            set_webhook timed out — Telegram API unreachable, continuing without webhook
+        )
+    except Exception as exc:  # noqa: BLE001 — ловим любые сетевые ошибки, бот не должен падать
+        logging.warning(set_webhook failed: %s — continuing without webhook, exc)
+
+
 async def _run_webhook(state: Any, shutdown_event: asyncio.Event) -> None:
     app = build_webhook_app(state.dp, state.bot, state.config.webhook_secret)
-    app["state"] = state
-    app.router.add_get("/health", health)
-    app.router.add_get("/version", version)
-    app.router.add_get("/metrics", metrics)
+    app[state] = state
+    app.router.add_get(/health, health)
+    app.router.add_get(/version, version)
+    app.router.add_get(/metrics, metrics)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, os.getenv("BIND_HOST", "0.0.0.0"), state.config.metrics_port)
+    site = web.TCPSite(runner, os.getenv(BIND_HOST, 0.0.0.0), state.config.metrics_port)
     await site.start()
-    logging.info("Webhook HTTP server listening on :%s", state.config.metrics_port)
+    logging.info(Webhook HTTP server listening on :%s, state.config.metrics_port)
 
-    await state.bot.delete_webhook(drop_pending_updates=True)
-    # No certificate here on purpose. Telegram's setWebhook pins the bot to the CA of
-    # whatever certificate is passed, so a renewal leaves the bot delivering to an
-    # endpoint it can no longer verify: updates stop while setWebhook still reports
-    # success. That is exactly the 26.09 incident - four of nine bots stopped
-    # receiving updates after certbot rotated the certificate, and only the bots that
-    # had been restarted re-registered, so the rest stayed healthy and hid the cause.
-    # TLS terminates at nginx with a publicly trusted certificate, so Telegram
-    # verifies the endpoint through the normal CA bundle and needs no pin.
-    await state.bot.set_webhook(
-        url=state.config.webhook_url,
-        secret_token=state.config.webhook_secret or None,
-    )
-    logging.info("Telegram webhook registered: %s", state.config.webhook_url)
+    # Webhook-регистрация не критична для Bühnie — если Telegram API недоступен,
+    # HTTP-сервер всё равно должен отвечать на health/metrics.
+    await _safe_delete_webhook(state.bot, drop_pending_updates=True)
+    if state.config.webhook_url:
+        await _safe_set_webhook(state.bot, state.config.webhook_url, state.config.webhook_secret or None)
     try:
         await shutdown_event.wait()
     finally:
-        await state.bot.delete_webhook()
+        await _safe_delete_webhook(state.bot)
         await runner.cleanup()
 
 
 async def _run_polling(state: Any, shutdown_event: asyncio.Event) -> None:
-    await state.bot.delete_webhook(drop_pending_updates=True)
+    await _safe_delete_webhook(state.bot, drop_pending_updates=True)
     runner = await start_metrics_server(state.config.metrics_port)
     try:
         await asyncio.wait([
@@ -72,8 +94,8 @@ async def _run_polling(state: Any, shutdown_event: asyncio.Event) -> None:
 async def main() -> None:
     state = create_app()
     state.config.validate()
-    setup_logging(level="INFO", json=True, bot_name="store")
-    setup_tracing(service_name="store")
+    setup_logging(level=INFO, json=True, bot_name=store)
+    setup_tracing(service_name=store)
     init_sentry(state.config.sentry_dsn)
     await migrate(state.db)
     state.dp.message.middleware(AuthMiddleware(state.db))
@@ -109,5 +131,5 @@ async def main() -> None:
         pass
 
 
-if __name__ == "__main__":
+if __name__ == __main__:
     asyncio.run(main())
