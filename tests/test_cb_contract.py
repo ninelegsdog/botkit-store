@@ -43,3 +43,20 @@ def test_every_emit_is_a_value():
     """Прод-код: убрать хэндлер -> тест падает, убрать кнопку -> тест падает."""
     emits, _ = _collect()
     assert emits, "нет эмитед callback_data — проверь обход сканера"
+
+
+def test_callback_is_wellformed_valid():
+    from src.core.callbacks import callback_is_wellformed
+    assert callback_is_wellformed("admin_cat:1", "admin_cat:") is True
+
+
+def test_callback_is_wellformed_invalid():
+    from src.core.callbacks import callback_is_wellformed
+    assert callback_is_wellformed("admin_cat:abc", "admin_cat:") is False
+    assert callback_is_wellformed(None, "admin_cat:") is False
+
+
+def test_callback_is_wellformed_too_long():
+    from src.core.callbacks import MAX_CALLBACK_BYTES, callback_is_wellformed
+    long_data = "a" * (MAX_CALLBACK_BYTES + 1)
+    assert callback_is_wellformed(long_data, "") is False
