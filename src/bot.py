@@ -23,47 +23,47 @@ from src.store import texts
 
 
 async def _safe_delete_webhook(bot: Any, drop_pending_updates: bool = True) -> None:
-    Удалить вебхук с таймаутом. Не падаем, если Telegram API недоступен.
+    """Удалить вебхук с таймаутом. Не падаем, если Telegram API недоступен."""
     try:
         await asyncio.wait_for(
             bot.delete_webhook(drop_pending_updates=drop_pending_updates), timeout=10.0
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logging.warning(
-            delete_webhook timed out — Telegram API unreachable, continuing without webhook
+            'delete_webhook timed out — Telegram API unreachable, continuing without webhook'
         )
     except Exception as exc:  # noqa: BLE001 — ловим любые сетевые ошибки, бот не должен падать
         logging.warning(
-            delete_webhook failed: %s — continuing without webhook, exc
+            'delete_webhook failed: %s — continuing without webhook', exc
         )
 
 
 async def _safe_set_webhook(bot: Any, url: str, secret_token: str | None = None) -> None:
-    Установить вебхук с таймаутом. Не падаем, если Telegram API недоступен.
+    """Установить вебхук с таймаутом. Не падаем, если Telegram API недоступен."""
     try:
         await asyncio.wait_for(
             bot.set_webhook(url=url, secret_token=secret_token), timeout=10.0
         )
-        logging.info(Telegram webhook registered: %s, url)
-    except asyncio.TimeoutError:
+        logging.info('Telegram webhook registered: %s', url)
+    except TimeoutError:
         logging.warning(
-            set_webhook timed out — Telegram API unreachable, continuing without webhook
+            'set_webhook timed out — Telegram API unreachable, continuing without webhook'
         )
     except Exception as exc:  # noqa: BLE001 — ловим любые сетевые ошибки, бот не должен падать
-        logging.warning(set_webhook failed: %s — continuing without webhook, exc)
+        logging.warning('set_webhook failed: %s — continuing without webhook', exc)
 
 
 async def _run_webhook(state: Any, shutdown_event: asyncio.Event) -> None:
     app = build_webhook_app(state.dp, state.bot, state.config.webhook_secret)
     app[state] = state
-    app.router.add_get(/health, health)
-    app.router.add_get(/version, version)
-    app.router.add_get(/metrics, metrics)
+    app.router.add_get('/health', health)
+    app.router.add_get('/version', version)
+    app.router.add_get('/metrics', metrics)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, os.getenv(BIND_HOST, 0.0.0.0), state.config.metrics_port)
+    site = web.TCPSite(runner, os.getenv('BIND_HOST', '0.0.0.0'), state.config.metrics_port)
     await site.start()
-    logging.info(Webhook HTTP server listening on :%s, state.config.metrics_port)
+    logging.info('Webhook HTTP server listening on :%s', state.config.metrics_port)
 
     # Webhook-регистрация не критична для Bühnie — если Telegram API недоступен,
     # HTTP-сервер всё равно должен отвечать на health/metrics.
@@ -94,8 +94,8 @@ async def _run_polling(state: Any, shutdown_event: asyncio.Event) -> None:
 async def main() -> None:
     state = create_app()
     state.config.validate()
-    setup_logging(level=INFO, json=True, bot_name=store)
-    setup_tracing(service_name=store)
+    setup_logging(level=logging.INFO, json=True, bot_name='store')
+    setup_tracing(service_name='store')
     init_sentry(state.config.sentry_dsn)
     await migrate(state.db)
     state.dp.message.middleware(AuthMiddleware(state.db))
@@ -131,5 +131,5 @@ async def main() -> None:
         pass
 
 
-if __name__ == __main__:
+if __name__ == '__main__':
     asyncio.run(main())
