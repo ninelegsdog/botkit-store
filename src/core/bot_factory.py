@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.fsm.storage.base import DefaultKeyBuilder
 from aiogram.fsm.storage.redis import RedisStorage
 
@@ -17,7 +20,13 @@ class AppState:
         self.db = Database(config)
         self.storage = Storage(self.db)
         self.metrics = Metrics()
-        self.bot = Bot(token=config.bot_token, default=DefaultBotProperties(parse_mode="HTML"))
+        proxy = os.environ.get("TELEGRAM_PROXY") or None
+        session = AiohttpSession(proxy=proxy) if proxy else None
+        self.bot = Bot(
+            token=config.bot_token,
+            session=session,
+            default=DefaultBotProperties(parse_mode="HTML"),
+        )
         self.dp = Dispatcher()
         self.fsm_storage = RedisStorage.from_url(config.redis_url, key_builder=DefaultKeyBuilder(prefix="fsm:store"))
 
