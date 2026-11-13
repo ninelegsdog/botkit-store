@@ -625,7 +625,8 @@ async def refund_order(
         if bot_token and charge_id:
             try:
                 api_base = os.environ.get("TELEGRAM_API_BASE", "https://api.telegram.org")
-                async with httpx.AsyncClient() as client:
+                proxy = os.environ.get("TELEGRAM_PROXY") or None
+                async with httpx.AsyncClient(proxy=proxy) as client:
                     resp = await client.post(
                         f"{api_base}/bot{bot_token}/refundStarPayment",
                         json={
