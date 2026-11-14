@@ -633,3 +633,380 @@ async def test_cb_cancel_confirm():
     q = _cb(1, "admin_cancel_confirm")
     await cb(q)
     q.answer.assert_called()
+
+
+# ── additional: untested handlers ──────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_cat_edit_enter_name():
+    r = _router()
+    cb = _find(r, "message", "cat_edit_enter_name")
+    assert cb is not None
+    m = _msg(1, "NewName")
+    st = _state()
+    st.get_data = AsyncMock(return_value={"cat_id": 1, "cat_action": "edit"})
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cat_edit_enter_name_skip():
+    r = _router()
+    cb = _find(r, "message", "cat_edit_enter_name")
+    assert cb is not None
+    m = _msg(1, "-")
+    st = _state()
+    st.get_data = AsyncMock(return_value={"cat_id": 1, "cat_action": "edit"})
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cat_edit_enter_name_empty():
+    r = _router()
+    cb = _find(r, "message", "cat_edit_enter_name")
+    assert cb is not None
+    m = _msg(1, "")
+    st = _state()
+    st.get_data = AsyncMock(return_value={"cat_id": 1, "cat_action": "edit"})
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_prod_enter_payload_link():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_payload_link")
+    assert cb is not None
+    m = _msg(1, "https://example.com")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_prod_enter_payload_link_empty():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_payload_link")
+    assert cb is not None
+    m = _msg(1, "")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_cat_prods_empty():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_cat_prods")
+    assert cb is not None
+    q = _cb(1, "admin_cat_prods:1")
+    with patch("src.admin.handlers.service.get_products", AsyncMock(return_value=[])):
+        await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_cat_prods_nonempty():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_cat_prods")
+    assert cb is not None
+    q = _cb(1, "admin_cat_prods:1")
+    with patch(
+        "src.admin.handlers.service.get_products",
+        AsyncMock(return_value=[{"id": 1, "name": "P", "price": 10, "is_active": 1}]),
+    ), patch(
+        "src.admin.handlers.service.get_stock",
+        AsyncMock(return_value={"available": 1, "total": 1}),
+    ):
+        await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_prod_list_empty():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_prod_list")
+    assert cb is not None
+    q = _cb(1, "admin_prod_list")
+    with patch("src.admin.handlers.service.get_categories_admin", AsyncMock(return_value=[])):
+        await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_order_list_empty():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_order_list")
+    assert cb is not None
+    q = _cb(1, "admin_order_list")
+    with patch("src.admin.handlers.service.get_orders_by_status", AsyncMock(return_value=[])):
+        await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_order_list_nonempty():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_order_list")
+    assert cb is not None
+    q = _cb(1, "admin_order_list")
+    with patch(
+        "src.admin.handlers.service.get_orders_by_status",
+        AsyncMock(return_value=[{"id": 1, "status": "paid", "amount": 10, "product_name": "P"}]),
+    ):
+        await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_order_fulfill_enter():
+    r = _router()
+    cb = _find(r, "message", "order_fulfill_enter")
+    assert cb is not None
+    m = _msg(1, "payload text")
+    st = _state()
+    st.get_data = AsyncMock(return_value={"order_id": 1})
+    with patch("src.admin.handlers.service.manual_fulfill_order", AsyncMock(return_value=True)):
+        await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_admin_confirm_general():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_admin_confirm_general")
+    assert cb is not None
+    q = _cb(1, "admin_confirm:something")
+    await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_sales_stats_handler():
+    r = _router()
+    cb = _find(r, "message", "sales_stats")
+    assert cb is not None
+    m = _msg(1, "📊 Продажи")
+    with patch("src.admin.handlers.service.get_sales_stats", AsyncMock(return_value={"orders": 1, "revenue": 100})):
+        await cb(m)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_stock_low_handler():
+    r = _router()
+    cb = _find(r, "message", "stock_low")
+    assert cb is not None
+    m = _msg(1, "⚠️ Остатки ключей")
+    with patch("src.admin.handlers.service.get_low_stock_products", AsyncMock(return_value=[])):
+        await cb(m)
+    m.answer.assert_called()
+
+
+# ── additional: error/empty/bad-data paths ─────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_check_password_throttled():
+    r = _router()
+    cb = _find(r, "message", "check_password")
+    assert cb is not None
+    m = _msg(1, "pw")
+    st = _state()
+    with patch("src.core.auth.AdminGate.is_throttled", return_value=True):
+        await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_check_password_bad():
+    r = _router()
+    cb = _find(r, "message", "check_password")
+    assert cb is not None
+    m = _msg(1, "wrong")
+    st = _state()
+    with patch("src.core.auth.AdminGate.authorize", return_value=False):
+        await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_list_categories_empty():
+    r = _router()
+    cb = _find(r, "message", "list_categories")
+    assert cb is not None
+    m = _msg(1, "🗂 Категории")
+    with patch("src.admin.handlers.service.get_categories_admin", AsyncMock(return_value=[])):
+        await cb(m)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_list_categories_non_admin():
+    r = _router()
+    cb = _find(r, "message", "list_categories")
+    assert cb is not None
+    m = _msg(999, "🗂 Категории")
+    await cb(m)
+    m.answer.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_cat_list_empty():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_cat_list")
+    assert cb is not None
+    q = _cb(1, "admin_cat_list")
+    with patch("src.admin.handlers.service.get_categories_admin", AsyncMock(return_value=[])):
+        await cb(q)
+    q.answer.assert_called()
+@pytest.mark.asyncio
+async def test_cb_cat_open_bad_data():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_cat_open")
+    assert cb is not None
+    q = _cb(1, "admin_cat:bad")
+    await cb(q)
+    q.answer.assert_called()
+@pytest.mark.asyncio
+async def test_cat_enter_name_empty():
+    r = _router()
+    cb = _find(r, "message", "cat_enter_name")
+    assert cb is not None
+    m = _msg(1, "")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cat_enter_position_invalid():
+    r = _router()
+    cb = _find(r, "message", "cat_enter_position")
+    assert cb is not None
+    m = _msg(1, "abc")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+@pytest.mark.asyncio
+async def test_list_products_empty():
+    r = _router()
+    cb = _find(r, "message", "list_products")
+    assert cb is not None
+    m = _msg(1, "🛍 Товары")
+    with patch("src.admin.handlers.service.get_categories_admin", AsyncMock(return_value=[])):
+        await cb(m)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_prod_list():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_prod_list")
+    assert cb is not None
+    q = _cb(1, "admin_prod_list")
+    with patch("src.admin.handlers.service.get_categories_admin", AsyncMock(return_value=[])):
+        await cb(q)
+    q.answer.assert_called()
+
+
+
+
+@pytest.mark.asyncio
+async def test_cb_prod_open_bad_data():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_prod_open")
+    assert cb is not None
+    q = _cb(1, "admin_prod:bad")
+    await cb(q)
+    q.answer.assert_called()
+@pytest.mark.asyncio
+async def test_prod_enter_name_empty():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_name")
+    assert cb is not None
+    m = _msg(1, "")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_prod_enter_price_invalid_value():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_price")
+    assert cb is not None
+    m = _msg(1, "0")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_prod_enter_delivery_type_invalid():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_delivery_type")
+    assert cb is not None
+    m = _msg(1, "9")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_prod_enter_photo_no_cat():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_photo")
+    assert cb is not None
+    m = _msg(1, "-")
+    st = _state()
+    st.get_data = AsyncMock(return_value={})
+    await cb(m, st)
+    m.answer.assert_called()
+@pytest.mark.asyncio
+async def test_list_orders_empty():
+    r = _router()
+    cb = _find(r, "message", "list_orders")
+    assert cb is not None
+    m = _msg(1, "📦 Заказы")
+    with patch("src.admin.handlers.service.get_orders_by_status", AsyncMock(return_value=[])):
+        await cb(m)
+    m.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_order_open_not_found():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_order_open")
+    assert cb is not None
+    q = _cb(1, "admin_order:999")
+    with patch("src.admin.handlers.service.get_orders_by_status", AsyncMock(return_value=[])):
+        await cb(q)
+    q.answer.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_cb_order_open_bad_data():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_order_open")
+    assert cb is not None
+    q = _cb(1, "admin_order:bad")
+    await cb(q)
+    q.answer.assert_called()
+@pytest.mark.asyncio
+async def test_cb_admin_back_handler():
+    r = _router()
+    cb = _find(r, "callback_query", "cb_admin_back")
+    assert cb is not None
+    q = _cb(1, "admin_back")
+    await cb(q)
+    q.answer.assert_called()
+@pytest.mark.asyncio
+async def test_prod_enter_keys_empty():
+    r = _router()
+    cb = _find(r, "message", "prod_enter_keys")
+    assert cb is not None
+    m = _msg(1, "")
+    st = _state()
+    await cb(m, st)
+    m.answer.assert_called()

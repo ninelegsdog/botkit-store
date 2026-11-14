@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import httpx
@@ -623,9 +624,11 @@ async def refund_order(
         # Call Telegram refundStarPayment API when a token is available.
         if bot_token and charge_id:
             try:
-                async with httpx.AsyncClient() as client:
+                api_base = os.environ.get("TELEGRAM_API_BASE", "https://api.telegram.org")
+                proxy = os.environ.get("TELEGRAM_PROXY") or None
+                async with httpx.AsyncClient(proxy=proxy) as client:
                     resp = await client.post(
-                        f"https://api.telegram.org/bot{bot_token}/refundStarPayment",
+                        f"{api_base}/bot{bot_token}/refundStarPayment",
                         json={
                             "user_id": user_id,
                             "payment_charge_id": charge_id,

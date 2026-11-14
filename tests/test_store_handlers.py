@@ -293,3 +293,40 @@ def _find(router, attr: str, name: str):
         if hasattr(cb, "__name__") and cb.__name__ == name:
             return cb
     raise AssertionError(f"handler {name!r} not found")
+
+
+@pytest.mark.asyncio
+async def test_show_cart_with_items(db):
+    state = _app_state(db)
+    prod_id = await _seed_product(db)
+    await service.add_to_cart(db, BUYER, prod_id)
+    router = create_store_router(state)
+    handler = _find(router, "message", "show_cart")
+    msg = _make_message("🛒 Корзина")
+    await handler(msg)
+    msg.answer.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_my_orders_with_orders(db):
+    state = _app_state(db)
+    order_id = await _seed_order(db)
+    await service.mark_paid(db, order_id, "chg")
+    router = create_store_router(state)
+    handler = _find(router, "message", "my_orders")
+    msg = _make_message("📦 Мои покупки")
+    await handler(msg)
+    msg.answer.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_redeliver_found(db):
+    state = _app_state(db)
+    order_id = await _seed_order(db)
+    await service.mark_paid(db, order_id, "chg")
+    await service.manual_fulfill_order(db, order_id, "test payload")
+    router = create_store_router(state)
+    handler = _find(router, "callback_query", "redeliver")
+    cb = _make_callback(f"store_redeliver:{order_id}")
+    await handler(cb)
+    cb.message.answer.assert_awaited()
