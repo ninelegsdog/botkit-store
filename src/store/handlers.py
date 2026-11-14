@@ -150,7 +150,7 @@ def create_store_router(app_state: AppState) -> Router:
         # PAYMENT_PROVIDER=yookassa + YOOKASSA_SHOP_ID/SECRET_KEY.
         provider_name = os.getenv("PAYMENT_PROVIDER", "mock").strip().lower() or "mock"
 
-        async def _on_paid(payload: str) -> None:
+        async def _on_paid(payload: str, user_id: int | None = None) -> None:
             if not payload.startswith("orders:"):
                 return
             for oid_str in payload.split(":", 1)[1].split(","):
