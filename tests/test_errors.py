@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+import pytest
 from aiogram.exceptions import TelegramNetworkError, TelegramRetryAfter
 from aiogram.types import CallbackQuery, Message, Update, User
 from prometheus_client import generate_latest
@@ -80,3 +81,55 @@ def test_metrics_endpoint_exposes_counters() -> None:
 def test_update_types_importable() -> None:
     # smoke: aiogram types used by handlers exist in this version
     assert Update and Message and CallbackQuery and User
+
+
+@pytest.mark.asyncio
+async def test_metrics_app_health():
+    from aiohttp.test_utils import TestClient, TestServer
+    app = create_metrics_app()
+    server = TestServer(app)
+    cl = TestClient(server)
+    await cl.start_server()
+    resp = await cl.get("/health")
+    assert resp.status == 200
+    await cl.close()
+
+
+@pytest.mark.asyncio
+async def test_metrics_app_version():
+    from aiohttp.test_utils import TestClient, TestServer
+    app = create_metrics_app()
+    server = TestServer(app)
+    cl = TestClient(server)
+    await cl.start_server()
+    resp = await cl.get("/version")
+    assert resp.status == 200
+    body = await resp.json()
+    assert "version" in body
+    await cl.close()
+
+
+@pytest.mark.asyncio
+async def test_metrics_app_metrics():
+    from aiohttp.test_utils import TestClient, TestServer
+    app = create_metrics_app()
+    server = TestServer(app)
+    cl = TestClient(server)
+    await cl.start_server()
+    resp = await cl.get("/metrics")
+    assert resp.status == 200
+    await cl.close()
+
+
+def test_metrics_inc_methods():
+    from src.core.metrics import Metrics
+    m = Metrics()
+    m.inc_messages()
+    m.inc_orders()
+    m.inc_delivered()
+    m.inc_errors()
+    assert m.messages_processed == 1
+    assert m.orders_created == 1
+    assert m.orders_delivered == 1
+    assert m.errors == 1
+    assert m.uptime_seconds() >= 0
