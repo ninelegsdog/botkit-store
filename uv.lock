@@ -361,7 +361,6 @@ dependencies = [
     { name = "prometheus-client" },
     { name = "pydantic-settings" },
     { name = "redis" },
-    { name = "sentry-sdk" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "structlog" },
 ]
@@ -405,7 +404,6 @@ requires-dist = [
     { name = "redis", specifier = ">=5.0" },
     { name = "requests", marker = "extra == 'dev'", specifier = ">=2.31" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
-    { name = "sentry-sdk", specifier = ">=2.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0" },
     { name = "structlog", specifier = ">=24.0" },
     { name = "telethon", marker = "extra == 'e2e'", specifier = ">=1.34" },
