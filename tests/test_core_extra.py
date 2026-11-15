@@ -22,7 +22,6 @@ from src.core.fsm import AdminAuth, AdminCategory, AdminProduct, CartCheckout
 from src.core.metrics import ORDERS_TOTAL, UPDATES_TOTAL, Metrics, UpdatesMiddleware
 from src.core.navigation import admin_menu, client_menu
 from src.core.payments import MockPaymentProvider, PaymentProvider
-from src.core.sentry import init_sentry
 from src.core.storage import Storage
 from src.core.throttling import ThrottlingMiddleware
 from src.core.webhook import create_app as create_webhook_app
@@ -236,21 +235,7 @@ async def test_updates_middleware_increments_prometheus() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# sentry
 # --------------------------------------------------------------------------- #
-def test_init_sentry_no_dsn_silent() -> None:
-    init_sentry(None)
-
-
-def test_init_sentry_missing_sdk() -> None:
-    with patch.dict("sys.modules", {"sentry_sdk": None}):
-        init_sentry("https://abc@sentry.io/1")
-
-
-def test_init_sentry_valid_dsn() -> None:
-    init_sentry("https://abc@sentry.io/1")
-
-
 # --------------------------------------------------------------------------- #
 # errors
 # --------------------------------------------------------------------------- #

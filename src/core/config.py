@@ -13,7 +13,6 @@ class Config:
     redis_url: str = "redis://127.0.0.1:6380/2"
     db_path: str = "data/store.db"
     log_level: str = "INFO"
-    sentry_dsn: str = ""
     webhook_url: str = ""
     webhook_secret: str = ""
     metrics_port: int = 8083
@@ -37,7 +36,6 @@ class Config:
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
             db_path=os.getenv("DB_PATH", "data/store.db"),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
-            sentry_dsn=os.getenv("SENTRY_DSN", ""),
             webhook_url=os.getenv("WEBHOOK_URL", ""),
             webhook_secret=os.getenv("WEBHOOK_SECRET", ""),
             metrics_port=int(os.getenv("METRICS_PORT", "8083")),
