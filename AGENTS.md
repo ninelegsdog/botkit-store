@@ -81,7 +81,7 @@ Admin handlers (`admin/handlers.py`) are FSM-driven and must:
 - Soft-delete only: `is_active = 0`, never hard-delete rows referenced by orders or carts.
 - Category deletion refuses when products exist; product deletion refuses when unfulfilled orders exist.
 
-Coverage floor for `src/admin/handlers.py` is 60% (per `scripts/coverage-floors.json`).
+Coverage floor for `src/admin/handlers.py` is 76% (per `scripts/coverage-floors.json`).
 
 ## Style
 
