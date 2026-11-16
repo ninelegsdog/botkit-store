@@ -23,7 +23,10 @@ These are enforced in CI (ci.yml, deploy.yml). Do not work around them.
 5. **Never weaken a gate to make a build green.** `uv lock --check`, gitleaks,
    Trivy and `pre-commit` are load-bearing. Fix the code they are complaining about.
 6. **Never let an unauthenticated event reach the state machine.** The webhook
-   secret check is in `src/delivery/webhook_api.py` and is security-critical.
+   secret check lives in the shared core package (`botkit_core.webhook` —
+   `build_webhook_app(..., secret_token=...)`, re-exported by
+   `src/core/tgwebhook.py`, wired in `src/bot.py`) and is security-critical:
+   mount `/webhook` only with `webhook_secret` set.
 7. **Never pin a dependency by hand in `pyproject.toml` alone.** `uv.lock` is the
    resolved set and CI fails when the two part ways.
 8. **Never commit an evidence or run artifact.** `.env`, `*.session` and coverage
@@ -81,7 +84,7 @@ Admin handlers (`admin/handlers.py`) are FSM-driven and must:
 - Soft-delete only: `is_active = 0`, never hard-delete rows referenced by orders or carts.
 - Category deletion refuses when products exist; product deletion refuses when unfulfilled orders exist.
 
-Coverage floor for `src/admin/handlers.py` is 60% (per `scripts/coverage-floors.json`).
+Coverage floor for `src/admin/handlers.py` is 76% (per `scripts/coverage-floors.json`).
 
 ## Style
 
